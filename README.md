@@ -11,6 +11,7 @@ Plateforme de gestion centralisée pour les artisans, clients et administrateurs
 - Annuaire des artisans (vue liste + carte Leaflet interactive)
 - Suivi de tous les projets avec vue accordéon
 - Gestion multi-artisans par projet
+- **Gestion des utilisateurs** : créer, modifier, supprimer des artisans, clients et admins
 
 **Artisan**
 - Assistant d'intégration (onboarding) au premier accès
@@ -93,6 +94,7 @@ artisan-portal/
     ├── directory.html         # Annuaire + carte (Admin)
     ├── projects.html          # Suivi des projets (Admin)
     ├── documents.html         # Documents signés (Client)
+    ├── admin.html             # Gestion des utilisateurs (Admin)
     ├── onboarding.html        # Assistant de profil
     ├── css/
     │   └── style.css          # Tous les styles (650+ lignes, pas de Tailwind)
@@ -104,6 +106,7 @@ artisan-portal/
         ├── directory.js       # Cartes artisans + carte Leaflet
         ├── projects.js        # Liste accordéon triée par statut
         ├── documents.js       # Documents de fin de travaux
+        ├── admin.js           # Gestion utilisateurs (CRUD complet)
         └── onboarding.js      # Formulaire de profil
 ```
 
@@ -134,7 +137,12 @@ npm run init-db
 | POST | `/api/projects` | Créer un projet |
 | GET | `/api/invoices?artisanId=...` | Factures d'un artisan |
 | POST | `/api/invoices` | Soumettre une facture |
+| GET | `/api/users` | Liste de tous les utilisateurs (Admin) |
 | GET | `/api/users/artisans` | Liste des artisans |
+| GET | `/api/users/clients` | Liste des clients |
+| POST | `/api/users` | Créer un utilisateur (Admin) |
+| PUT | `/api/users/:id` | Modifier un utilisateur (Admin) |
+| DELETE | `/api/users/:id` | Supprimer un utilisateur (Admin) |
 | POST | `/api/users/profile` | Mise à jour du profil (onboarding) |
 | GET | `/api/alerts` | Alertes système |
 
@@ -147,6 +155,10 @@ npm run init-db
    - **Start Command** : `npm start`
    - **Environment** : ajouter `PORT=3000`
 4. Déployer
+
+> **Note :** `npm run init-db` est sûr à exécuter à chaque déploiement. Il crée les tables seulement si elles n'existent pas et ne seed les données de démo que si la base est vide. Les données existantes ne sont jamais supprimées.
+>
+> Pour forcer une réinitialisation complète, supprimer le fichier `db/database.sqlite` et relancer `npm run init-db`.
 
 ## Variables d'environnement
 

@@ -1,8 +1,11 @@
 /**
  * Database Initialization Script (db/init.js)
  * --------------------------------------------
- * Creates all tables and seeds them with demo data.
- * Uses sql.js (pure JS SQLite — no native compilation needed).
+ * SAFE TO RUN ON EVERY DEPLOY.
+ * 
+ * - Creates tables only if they don't exist (IF NOT EXISTS)
+ * - Seeds demo data only if the users table is empty
+ * - Will never delete existing data
  * 
  * Run with: npm run init-db
  */
@@ -16,15 +19,23 @@ const dbPath = path.resolve(__dirname, '..', process.env.DB_PATH || './db/databa
 
 async function initialize() {
   const SQL = await initSqlJs();
-  const db = new SQL.Database();
-
-  console.log('🔧 Initializing database...\n');
+  
+  // Load existing database if it exists, otherwise create new
+  let db;
+  if (fs.existsSync(dbPath)) {
+    const fileBuffer = fs.readFileSync(dbPath);
+    db = new SQL.Database(fileBuffer);
+    console.log('📂 Existing database found, checking tables...');
+  } else {
+    db = new SQL.Database();
+    console.log('🆕 No database found, creating new one...');
+  }
 
   // ------------------------------------------------------------------
-  // CREATE TABLES
+  // CREATE TABLES (IF NOT EXISTS — safe to run repeatedly)
   // ------------------------------------------------------------------
   db.run(`
-    CREATE TABLE users (
+    CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
@@ -41,7 +52,7 @@ async function initialize() {
   `);
 
   db.run(`
-    CREATE TABLE projects (
+    CREATE TABLE IF NOT EXISTS projects (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       client_id TEXT NOT NULL,
@@ -55,7 +66,7 @@ async function initialize() {
   `);
 
   db.run(`
-    CREATE TABLE project_artisans (
+    CREATE TABLE IF NOT EXISTS project_artisans (
       project_id TEXT NOT NULL,
       artisan_id TEXT NOT NULL,
       PRIMARY KEY (project_id, artisan_id),
@@ -65,7 +76,7 @@ async function initialize() {
   `);
 
   db.run(`
-    CREATE TABLE invoices (
+    CREATE TABLE IF NOT EXISTS invoices (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL,
       artisan_id TEXT NOT NULL,
@@ -80,7 +91,7 @@ async function initialize() {
   `);
 
   db.run(`
-    CREATE TABLE alerts (
+    CREATE TABLE IF NOT EXISTS alerts (
       id TEXT PRIMARY KEY,
       message TEXT NOT NULL,
       type TEXT NOT NULL DEFAULT 'info' CHECK(type IN ('info', 'warning', 'error')),
@@ -88,12 +99,64 @@ async function initialize() {
     )
   `);
 
-  console.log('✅ Tables created.\n');
+  db.run(`
+    CREATE TABLE IF NOT EXISTS artisan_documents (
+      id TEXT PRIMARY KEY,
+      artisan_id TEXT NOT NULL,
+      document_type TEXT NOT NULL CHECK(document_type IN (
+        'kbis',
+        'assurance_decennale',
+        'attestation_vigilance_urssaf',
+        'liste_salaries_etrangers',
+        'declaration_honneur'
+      )),
+      file_name TEXT,
+      upload_date TEXT NOT NULL DEFAULT (datetime('now')),
+      expiry_date TEXT,
+      is_not_concerned INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'valid' CHECK(status IN ('valid', 'expired', 'missing')),
+      FOREIGN KEY (artisan_id) REFERENCES users(id),
+      UNIQUE(artisan_id, document_type)
+    )
+  `);
+
+  console.log('✅ Tables verified.\n');
 
   // ------------------------------------------------------------------
-  // SEED DATA
+  // CHECK IF SEED IS NEEDED
   // ------------------------------------------------------------------
+  const result = db.exec('SELECT COUNT(*) as c FROM users');
+  const userCount = result[0].values[0][0];
 
+  if (userCount > 0) {
+    console.log(`📊 Database already has ${userCount} users — skipping seed.`);
+    console.log('   To force a fresh seed, delete db/database.sqlite and run again.');
+  } else {
+    console.log('🌱 Empty database detected — seeding demo data...\n');
+    seedData(db);
+  }
+
+  // ------------------------------------------------------------------
+  // SAVE
+  // ------------------------------------------------------------------
+  const data = db.export();
+  const buffer = Buffer.from(data);
+
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  fs.writeFileSync(dbPath, buffer);
+  console.log(`\n💾 Database saved to: ${dbPath}`);
+  console.log('🎉 Done!');
+  db.close();
+}
+
+// ------------------------------------------------------------------
+// SEED FUNCTION (only called when database is empty)
+// ------------------------------------------------------------------
+function seedData(db) {
   // --- Users ---
   const users = [
     ['u1', 'Sarah Jenkins', 'admin@company.com', 'password123', 'ADMIN', 1, null, null, null, null, null, null],
@@ -107,11 +170,10 @@ async function initialize() {
   for (const u of users) {
     db.run(
       `INSERT INTO users (id, name, email, password, role, is_onboarded, company_name, specialty, address, lat, lng, documents_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      u
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, u
     );
   }
-  console.log(`✅ ${users.length} users seeded.`);
+  console.log(`  ✅ ${users.length} users seeded.`);
 
   // --- Projects ---
   const projects = [
@@ -123,24 +185,17 @@ async function initialize() {
   for (const p of projects) {
     db.run(
       `INSERT INTO projects (id, title, client_id, status, start_date, description, end_of_work_signed)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      p
+       VALUES (?, ?, ?, ?, ?, ?, ?)`, p
     );
   }
-  console.log(`✅ ${projects.length} projects seeded.`);
+  console.log(`  ✅ ${projects.length} projects seeded.`);
 
   // --- Project-Artisan Links ---
-  const links = [
-    ['p1', 'u2'],
-    ['p2', 'u4'],
-    ['p3', 'u5'],
-    ['p3', 'u6'],
-  ];
-
+  const links = [['p1', 'u2'], ['p2', 'u4'], ['p3', 'u5'], ['p3', 'u6']];
   for (const l of links) {
     db.run(`INSERT INTO project_artisans (project_id, artisan_id) VALUES (?, ?)`, l);
   }
-  console.log(`✅ ${links.length} project-artisan links seeded.`);
+  console.log(`  ✅ ${links.length} project-artisan links seeded.`);
 
   // --- Invoices ---
   const invoices = [
@@ -152,11 +207,10 @@ async function initialize() {
   for (const i of invoices) {
     db.run(
       `INSERT INTO invoices (id, project_id, artisan_id, amount, date, status, file_name)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      i
+       VALUES (?, ?, ?, ?, ?, ?, ?)`, i
     );
   }
-  console.log(`✅ ${invoices.length} invoices seeded.`);
+  console.log(`  ✅ ${invoices.length} invoices seeded.`);
 
   // --- Alerts ---
   const alerts = [
@@ -168,35 +222,7 @@ async function initialize() {
   for (const a of alerts) {
     db.run(`INSERT INTO alerts (id, message, type, created_at) VALUES (?, ?, ?, ?)`, a);
   }
-  console.log(`✅ ${alerts.length} alerts seeded.`);
-
-  // ------------------------------------------------------------------
-  // VERIFY
-  // ------------------------------------------------------------------
-  console.log('\n📊 Database summary:');
-  const tables = ['users', 'projects', 'project_artisans', 'invoices', 'alerts'];
-  for (const table of tables) {
-    const result = db.exec(`SELECT COUNT(*) as c FROM ${table}`);
-    const count = result[0].values[0][0];
-    console.log(`   ${table}: ${count}`);
-  }
-
-  // ------------------------------------------------------------------
-  // SAVE TO FILE
-  // ------------------------------------------------------------------
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  
-  fs.writeFileSync(dbPath, buffer);
-  console.log(`\n💾 Database saved to: ${dbPath}`);
-  console.log('🎉 Database initialized successfully!');
-  
-  db.close();
+  console.log(`  ✅ ${alerts.length} alerts seeded.`);
 }
 
 initialize().catch(err => {

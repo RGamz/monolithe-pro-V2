@@ -141,7 +141,7 @@ function buildDashboardHTML(user, projects, alerts, stats) {
         <!-- Pie Chart -->
         <div class="card">
           <div class="card-body">
-            <h3 class="font-bold mb-4">Statut du projet</h3>
+            <h3 class="font-bold mb-4">Statut des projets</h3>
             <div class="chart-container">
               <canvas id="status-chart"></canvas>
             </div>
@@ -234,6 +234,7 @@ function renderPieChart(active, completed, pending) {
           labels: {
             padding: 16,
             usePointStyle: true,
+            pointStyle: 'circle',
             pointStyleWidth: 10,
             font: { size: 12 }
           }

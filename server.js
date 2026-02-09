@@ -36,6 +36,7 @@ app.use('/api/projects', require('./routes/projects'));
 app.use('/api/invoices', require('./routes/invoices'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/alerts', require('./routes/alerts'));
+app.use('/api/documents', require('./routes/documents'));
 
 // ------------------------------------------------------------------
 // FALLBACK: Serve index.html for any non-API, non-file route

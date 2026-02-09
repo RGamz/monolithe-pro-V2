@@ -59,6 +59,8 @@ const ICONS = {
   
   users: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
   
+  userCog: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m21.7 16.4-.9-.3"/><path d="m15.2 13.9-.9-.3"/><path d="m16.6 18.7.3-.9"/><path d="m19.1 12.2.3-.9"/><path d="m19.6 18.7-.4-1"/><path d="m16.8 12.3-.4-1"/><path d="m14.3 16.6 1-.4"/><path d="m20.7 13.8 1-.4"/></svg>',
+  
   folder: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
   
   logout: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>',
@@ -79,6 +81,8 @@ const PAGE_TITLES = {
   'documents': 'Documents',
   'directory': 'Annuaire des artisans',
   'projects': 'Suivi des projets',
+  'admin': 'Gestion des utilisateurs',
+  'artisan-profile': 'Profil Artisan',
 };
 
 // ---------------------------------------------------------------
@@ -98,9 +102,10 @@ function buildSidebar(user, currentPage) {
   
   // Role-specific items
   if (user.role === 'ARTISAN') {
-    navItems += navItem('invoices', ICONS.fileText, 'Factures & Documents', currentPage);
+    navItems += navItem('invoices', ICONS.fileText, 'Factures', currentPage);
+    navItems += navItem('documents', ICONS.folder, 'Documents', currentPage);
   }
-  
+
   if (user.role === 'CLIENT') {
     navItems += navItem('documents', ICONS.fileText, 'Documents du projet', currentPage);
   }
@@ -108,6 +113,7 @@ function buildSidebar(user, currentPage) {
   if (user.role === 'ADMIN') {
     navItems += navItem('directory', ICONS.users, 'Annuaire des artisans', currentPage);
     navItems += navItem('projects', ICONS.folder, 'Suivi des projets', currentPage);
+    navItems += navItem('admin', ICONS.userCog, 'Gestion utilisateurs', currentPage);
   }
 
   return `

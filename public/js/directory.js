@@ -96,10 +96,10 @@ function artisanCard(a) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${a.lat || 0},${a.lng || 0}`;
 
   return `
-    <div class="artisan-card">
+    <div class="artisan-card" style="cursor: pointer;" onclick="viewArtisanProfile('${a.id}')">
       <div class="artisan-card-header">
         <div>
-          <h3 class="artisan-name">${a.company_name || a.name}</h3>
+          <h3 class="artisan-name" style="color: var(--blue-600);">${a.company_name || a.name}</h3>
           <p class="artisan-specialty">${a.specialty || 'Service général'}</p>
         </div>
         ${complianceIcon}
@@ -112,7 +112,7 @@ function artisanCard(a) {
         ${statusDot}
       </div>
       <div class="artisan-card-footer">
-        <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">
+        <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">
           Voir sur Google Maps ${DIR_ICONS.externalLink}
         </a>
       </div>
@@ -156,7 +156,11 @@ function addMarkers(artisans) {
         .addTo(mapInstance)
         .bindPopup(`
           <div style="padding:4px;">
-            <h3 style="font-weight:700;font-size:14px;margin:0;">${a.company_name || a.name}</h3>
+            <h3 style="font-weight:700;font-size:14px;margin:0;">
+              <a href="/artisan-profile.html?id=${a.id}" style="color:#2563eb;text-decoration:none;">
+                ${a.company_name || a.name}
+              </a>
+            </h3>
             <p style="font-size:12px;color:#64748b;margin:4px 0;">${a.specialty || ''}</p>
             <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer"
                style="font-size:12px;color:#2563eb;font-weight:500;">
@@ -198,4 +202,8 @@ function filterArtisans() {
       renderMapView(content, filtered);
     }
   }
+}
+
+function viewArtisanProfile(artisanId) {
+  window.location.href = `/artisan-profile.html?id=${artisanId}`;
 }
